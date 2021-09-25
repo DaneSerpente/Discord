@@ -1,1 +1,2 @@
-# discord
+#discord
+Discord repository for bots. 

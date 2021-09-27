@@ -43,15 +43,63 @@ def disk_space(device):
         ssh.close()
 
 def raid(option='status'):
-        req_info = ('raidz1', 'caef', 'b56c', 'b5c2', '7fc6') 
-        stat = []
-        ssh.connect(hostname=SNAS01[0], username=SNAS01[1], password=SNAS01[2])
-        for i in req_info:
-            stdin, stdout, stderr = ssh.exec_command(f'zpool status | grep {i}')
+    req_info = ('state:', 'raidz1', 'caef', 'b56c', 'b5c2', '7fc6', 'errors:') 
+    stat = []
+    ssh.connect(hostname=SNAS01[0], username=SNAS01[1], password=SNAS01[2])
+    for i in req_info:
+        stdin, stdout, stderr = ssh.exec_command(f'zpool status | grep {i} | head -1')
+        if i == 'errors:':
+            result = stdout.read().decode('utf-8')
+            stat.append(result)
+        else:
             result = stdout.read().decode('utf-8').split()
             stat.append(result[1])
-        return stat 
-        ssh.close()
+    return stat 
+    ssh.close()
+
+def vpn(dev, cmd):
+    if dev == 'SNAS01':
+        host = SNAS01
+    elif dev == 'Odroid':
+        host = Odroid
+
+    ssh.connect(hostname=host[0], username=host[1], password=host[2])
+
+    if cmd.lower() == 'status':
+        if dev == 'SNAS01':
+            #ssh.connect(hostname=SNAS01[0], username=SNAS01[1], password=SNAS01[2])
+            stdin, stdout, stderr = ssh.exec_command('jexec 7 service openvpn status')
+            if 'running' in stdout.read().decode('utf-8'):
+                return "VPN is running"
+            else:
+                return "VPN is not running"  
+        else:
+            stdin, stdout, stderr = ssh.exec_command('systemctl status openvpn | grep Active')
+            if 'active' in stdout.read().decode('utf-8'):
+                return "VPN is running"
+            else:
+                return "VPN is not running"
+    elif cmd.lower() == 'check':
+        if dev == 'SNAS01':            
+            stdin, stdout, stderr = ssh.exec_command('jexec 7 ping -c 1 -t 2 8.8.8.8 | grep ttl')
+            if 'ttl' in stdout.read().decode('utf-8'):
+                return "VPN is operating properly"
+            else:
+                return "There is a problem with the VPN"
+        else:
+            stdin, stdout, stderr = ssh.exec_command('ping -c 1 -t 2 8.8.8.8 | grep ttl')
+            if 'ttl' in stdout.read().decode('utf-8'):
+                return "VPN is operating properly"
+            else:
+                return "There is a problem with the VPN"
+    elif cmd.lower() == 'restart':
+        if dev == 'SNAS01':            
+            ssh.exec_command('jexec 7 service openvpn restart')
+            return "VPN service has been restarted"
+        else:
+            ssh.exec_command('systemctl restart openvpn')
+            return "VPN service has been restarted"
+    ssh.close()
         
 @bot.event
 async def on_ready():
@@ -87,9 +135,23 @@ async def df(ctx, cmd, subcmd=''):
                     f"Capacity: {df[3]}\n")
         await ctx.send(response)
 
-    if cmd.lower() == 'raid':
+    elif cmd.lower() == 'raid':
         r_stat = raid('subcmd')
-        response = f"RAID: {r_stat[0]}"
+        response = (f"Datastore: {r_stat[0]}\n"
+                    f"RAID: {r_stat[1]}\n"
+                    f"HDD01: {r_stat[2]}\n"
+                    f"HDD02: {r_stat[3]}\n"
+                    f"HDD03: {r_stat[4]}\n"
+                    f"HDD04: {r_stat[5]}\n\n"
+                    f"{r_stat[6]}")
         await ctx.send(response)
+
+    elif cmd.lower() == 'vpn':
+        if subcmd == 'status':
+            await ctx.send(vpn('SNAS01', 'status'))
+        elif subcmd == 'check':
+            await ctx.send(vpn('SNAS01', 'check'))
+        elif subcmd == 'restart':
+            await ctx.send(vpn('SNAS01', 'restart')) 
 
 bot.run(TOKEN)

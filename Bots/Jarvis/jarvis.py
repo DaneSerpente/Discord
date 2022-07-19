@@ -20,7 +20,7 @@ bot = commands.Bot(command_prefix='!')
 def disk_space(device):
     if device.lower() == 'nas01':
         ssh.connect(hostname=NAS01[0], username=NAS01[1], password=NAS01[2])
-        stdin, stdout, stderr = ssh.exec_command('df -h | grep vg1000')
+        stdin, stdout, stderr = ssh.exec_command('df -h | grep volume1$')
         result = stdout.read().decode('utf-8').split()
         df = [result[1], result[2], result[3], result[4]]
         return df
@@ -67,8 +67,7 @@ def vpn(dev, cmd):
 
     if cmd.lower() == 'status':
         if dev == 'SNAS01':
-            #ssh.connect(hostname=SNAS01[0], username=SNAS01[1], password=SNAS01[2])
-            stdin, stdout, stderr = ssh.exec_command('jexec 7 service openvpn status')
+            stdin, stdout, stderr = ssh.exec_command('iocage exec service openvpn status')
             if 'running' in stdout.read().decode('utf-8'):
                 return "VPN is running"
             else:
@@ -81,7 +80,7 @@ def vpn(dev, cmd):
                 return "VPN is not running"
     elif cmd.lower() == 'check':
         if dev == 'SNAS01':            
-            stdin, stdout, stderr = ssh.exec_command('jexec 7 ping -c 1 -t 2 8.8.8.8 | grep ttl')
+            stdin, stdout, stderr = ssh.exec_command('iocage transmission ping -c 1 -t 2 8.8.8.8 | grep ttl')
             if 'ttl' in stdout.read().decode('utf-8'):
                 return "VPN is operating properly"
             else:
@@ -94,7 +93,7 @@ def vpn(dev, cmd):
                 return "There is a problem with the VPN"
     elif cmd.lower() == 'restart':
         if dev == 'SNAS01':            
-            ssh.exec_command('jexec 7 service openvpn restart')
+            ssh.exec_command('iocage transmission service openvpn restart')
             return "VPN service has been restarted"
         else:
             ssh.exec_command('systemctl restart openvpn')

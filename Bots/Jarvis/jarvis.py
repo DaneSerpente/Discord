@@ -67,7 +67,7 @@ def vpn(dev, cmd):
 
     if cmd.lower() == 'status':
         if dev == 'SNAS01':
-            stdin, stdout, stderr = ssh.exec_command('iocage exec service openvpn status')
+            stdin, stdout, stderr = ssh.exec_command('iocage exec transmission service openvpn status')
             if 'running' in stdout.read().decode('utf-8'):
                 return "VPN is running"
             else:

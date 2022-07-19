@@ -80,7 +80,7 @@ def vpn(dev, cmd):
                 return "VPN is not running"
     elif cmd.lower() == 'check':
         if dev == 'SNAS01':            
-            stdin, stdout, stderr = ssh.exec_command('iocage transmission ping -c 1 -t 2 8.8.8.8 | grep ttl')
+            stdin, stdout, stderr = ssh.exec_command('iocage exec transmission ping -c 1 -t 2 8.8.8.8 | grep ttl')
             if 'ttl' in stdout.read().decode('utf-8'):
                 return "VPN is operating properly"
             else:
@@ -93,7 +93,7 @@ def vpn(dev, cmd):
                 return "There is a problem with the VPN"
     elif cmd.lower() == 'restart':
         if dev == 'SNAS01':            
-            ssh.exec_command('iocage transmission service openvpn restart')
+            ssh.exec_command('iocage exec transmission service openvpn restart')
             return "VPN service has been restarted"
         else:
             ssh.exec_command('systemctl restart openvpn')
